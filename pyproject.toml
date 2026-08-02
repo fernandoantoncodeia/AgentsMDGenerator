@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentsmd"
+version = "0.1.0"
+description = "MCP server and operator CLI for the AgentsMDGenerator prompt catalogue"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=2.0.0",
+    "click>=8.0.0",
+    "pyyaml>=6.0.0",
+    "requests>=2.28.0",
+]
+
+[project.scripts]
+agentsmd = "agentsmd.cli:main"
+agentsmd-server = "agentsmd.server:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["agentsmd"]

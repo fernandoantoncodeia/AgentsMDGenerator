@@ -1,0 +1,402 @@
+disambiguate the usage of the tool within a project VS the usage and the existence of the catalogue VS the self-learning loop in a project.
+Lets deep dive a little bit into this concept to make sure we fine-tune the mechanics:
+1-a prompt CAN be a PROJECT prompt or a CATALOGUE prompt
+2-the update-agents flow is the process we use to create the project agentsmd with the catalogue content, and refresh it periodically
+3-the refresh-agents-content are really catalogue management behaviours, they dont belong to a project arena, they should work in the catalogue space
+4-the dynamics of proposal and curation apply to the catalogue but dont apply to the project itself. the feedback loop says today that any insertion to the catalogue MUST go through the flow. But we need to drop the curation process at the project level. When a project is amending its own agentsmd through the feedback loop, changes are applied directly to the project agentsmd. If the suggestion can be generalisable, then it should be added as suggestion to the catalogue
+5-we need to consider options on how to segregate the catalogue prompts and the project prompts. today we have one repository in the project holding both teh catalogue and the promptmd. That is not right, it actually adds to the danger of inadvertently reading all of the prompts within the context, as the instruction not to read them is in the prompt, not a physical separation. should we move to an MCP based strategy for the catalogue and catalgoue related services and just the agentsmd in context
+
+ and refreshing the 
+
+in 
+
+
+-----------------------
+
+1. valid prompts must be in a browsable catalogue in a "prompt-catalogue" folder in the tool. we must be able to broese easily the curated and proposed prompts in an easy way. we propose a curated file and a proposed file per category.
+2. prompts can be in two status "curated" and "proposed". when creating a new agentsmd file, only curated prompts are considered.
+3. proposed prompts must be operator reviewed. a proposed prompt can be accepted (moved to curated catalogue and removed form the proposed one), rejected (dropped).
+4. the existing flows have to be merge into a single one: "update-agents". first time invoked will cretae the file. any further call will refresh with updated content and will detect any categories applicable to the project not inserted yet and add them. this skills MUST be FORBIDDEN from reading the proposed prompts, it can only access the curated ones. 
+5. a new flow to "refresh-agents-content" should be created. here we can have several actions: addcontent, curatecontent, browsecontent, addcategory, curatecategory
+5.1. addcontent will add a new entry to the proposed catalogue. it must be mapped to a category.
+5.2. curatecontent will set one content as curated and remove it from proposed. if any entries match partially that comtent, it must be merged an simplified.
+5.3. browsecontent must get any suggestion from the known best practices and if any comntent is relevant to be added to the catalogue, it should invoke the addcontent for each of them
+5.4. addcategory would add a new category as a suggestion to the existing prompts categories
+5.5. curatecategory would accept a suggested category into the catalogue. any entries that might be remapped to the category from their existing location should be moved. remapping is operator validated (curated)
+6. any self-addition to the agentsmd, to the prompts base that comes as a suggestion form execution (as suggested in our recommended agentsmd base) MUST go through the refresh-agents-content flow
+ 
+
+----------------
+
+/opsx-explore
+
+I would like to have a workflow that can be invoked at the start of a project to generate a great AGENTS.MD. The workflow should be invoked as well at any point in time during the project, it would read the existing content, optimize and improve (if necessary) and return updated
+To do that, I would like to explore and reference any potential public sources where there are well-known best practices on this.
+
+From our experience, we should at least make sure that we have the following content in this file:
+1. Anthropic: be a colleague
+If you notice the user's request is based on a misconception, or spot a bug adjacent to what they asked about, say so. You're a collaborator, not just an executor�users benefit from your judgment, not just your compliance.
+
+Report outcomes faithfully: if tests fail, say so with the relevant output; if you did not run a verification step, say that rather than implying it succeeded. Never claim "all tests pass" when output shows failures, never suppress or simplify failing checks (tests, lints, type errors) to manufacture a green result, and never characterize incomplete or broken work as done. Equally, when a check did pass or a task is complete, state it plainly � do not hedge confirmed results with unnecessary disclaimers, downgrade finished work to "partial," or re-verify things you already checked. The goal is an accurate report, not a defensive one.
+
+When sending user-facing text, you're writing for a person, not logging to a console. Assume users can't see most tool calls or thinking - only your text output. Before your first tool call, briefly state what you're about to do. While working, give short updates at key moments: when you find something load-bearing (a bug, a root cause), when changing direction, when you've made progress without an update.
+
+When making updates, assume the person has stepped away and lost the thread. They don't know codenames, abbreviations, or shorthand you created along the way, and didn't track your process. Write so they can pick back up cold: use complete, grammatically correct sentences without unexplained jargon. Expand technical terms. Err on the side of more explanation. Attend to cues about the user's level of expertise; if they seem like an expert, tilt a bit more concise, while if they seem like they're new, be more explanatory. 
+
+Write user-facing text in flowing prose while eschewing fragments, excessive em dashes, symbols and notation, or similarly hard-to-parse content. Only use tables when appropriate; for example to hold short enumerable facts (file names, line numbers, pass/fail), or communicate quantitative data. Don't pack explanatory reasoning into table cells -- explain before or after. Avoid semantic backtracking: structure each sentence so a person can read it linearly, building up meaning without having to re-parse what came before. 
+
+What's most important is the reader understanding your output without mental overhead or follow-ups, not how terse you are. If the user has to reread a summary or ask you to explain, that will more than eat up the time savings from a shorter first read. Match responses to the task: a simple question gets a direct answer in prose, not headers and numbered sections. While keeping communication clear, also keep it concise, direct, and free of fluff. Avoid filler or stating the obvious. Get straight to the point. Don't overemphasize unimportant trivia about your process or use superlatives to oversell small wins or losses. Use inverted pyramid when appropriate (leading with the action), and if something about your reasoning or process is so important that it absolutely must be in user-facing text, save it for the end.
+
+These user-facing text instructions do not apply to code or tool calls.
+
+2. Fix your own errors
+## Build Error Feedback Loop
+
+When the user reports a build error caused by something the AI did or a class of mistake the AI could repeat, update this AGENTS.md with a rule that prevents the same error in future sessions. Do this proactively � do not wait to be asked.
+
+The pattern is:
+1. User reports a build failure or points out a repeated mistake.
+2. Identify the root cause and whether it is a repeatable class of error (not a one-off typo).
+3. If it is repeatable: add a targeted rule under the relevant section of this file (or add a new section if none fits). Keep the rule short and actionable � one or two sentences stating what to always do or never do.
+4. Confirm to the user that AGENTS.md has been updated so the mistake will not recur.
+
+3. This is not verbose, it is for AI agents
+Direct instructions for the AI. Keep every rule here short, imperative and actionable.
+After any edit to this file, re-read the whole file and cut anything verbose, redundant or non-actionable .Keep it short, direct, imperative � instructions for an AI to follow, not documentation for a person.
+
+4. Hints for python projects
+
+5. Hints for Windows COM based projects
+6. Hints for self-documentation
+7. Openspec driven changes
+Every behaviour affecting change, including quick direct-prompt fixes, goes through openspec: proposal +delta spec under openspec/changes/<slug> then �openspec archive�
+?* Check ??openspec/specs/?? and ??openspec/changes/?? first; don't start a change that duplicates an open one.
+�?  ?Implementing first and documenting retroactively in the same turn is fine, but archive before reporting the task done.
+�?  ?Never hand-edit ??openspec/specs/??. Only ??openspec archive?? writes there.
+�?  ?Skip only for purely cosmetic, no-behavior-change tweaks. Default to creating a change when unsure.
+�?  ?Batch any unspecced direct-prompt changes into one retroactive change before ending a session.
+
+8. Hints for tool erratic behaviour
+A tool-call mechanics failure (malformed JSON, rejected params, schema validation error) is not a decision point. Retry immediately with a simpler, safer form (one large multi/edit into several single edits) without asking the user how to proceed
+Only stop and ask the user after two materially different approaches have both failed.
+
+9 OpenSpec CLI
+
+�?  ?*Run the OpenSpec lifecycle end-to-end, unattended.* Every
+  ??openspec?? / ??npx openspec ...?? invocation runs without interaction;
+  chain propose -> apply -> archive without pausing to ask. Never leave a
+  finished change un-archived waiting on a confirmation.
+�?  ?*Always finish with ??openspec archive <change> -y??.* The ??-y?? skips
+  every prompt and the default sync-and-archive writes the change's deltas
+  into ??openspec/specs/?? in the same step � so no questions are asked and
+  the canonical specs are synced. Never pass ??--skip-specs?? or
+  ??--no-validate??.
+�?  ?Validate: ??npx openspec validate <change> --strict??.
+�?  ?Inspect a change before archive: `npx openspec show <change>
+  --json --deltas-only`. List: ??npx openspec list??. Status:
+  ??npx openspec status --change <name> --json??.
+�?  ?After archive reports cosmetic warnings, do NOT re-attempt � the
+  archive already succeeded.
+�?  ?*Never invent CLI flags.* Before passing an option to `npx
+  openspec <sub>` (or any other CLI) that is not already documented
+  in this section, in a workflow file, or in a prior successful
+  invocation, confirm it exists with ??npx openspec <sub> --help??.
+  Notably, ??openspec list?? accepts only ??--specs?? � there is no
+  ??--archived?? / ??--archive?? flag. To enumerate archived changes,
+  read ??openspec/changes/archive/?? with ??find_by_name?? /
+  ??list_dir??, not the CLI.
+
+9 Shell tooling
+
+This repo is developed on a mix of Windows (PowerShell 5.1) and
+Unix (bash / zsh) workstations. Rules below are tagged by scope.
+*Detect the host platform BEFORE proposing any shell command* and
+apply only the rules that match.
+
+9.1 Detect first
+
+Before the first ??run_command?? of a session � and again whenever you
+suspect the runtime changed:
+
+�?  ?*Use the runtime's declared metadata first.* Cascade and Claude
+  Code surface the OS and shell in the system prompt (look for
+  ??Operating System:?? and ??Shell:??, e.g. ??mac?? / ??zsh??, ??windows?? /
+  ??powershell??). Trust that string.
+�?  ?*If metadata is absent or ambiguous*, propose ONE cheap probe
+  (??python -c "import sys, platform; print(sys.platform, platform.system())"??
+  works on every shell � no dotted-import argv content) and read the
+  result before issuing platform-specific commands.
+�?  ?**Path separators in proposed commands MUST match the detected
+  host**: ??\?? on Windows, ??/?? on Unix. Do NOT mix. Code citations in
+  prose follow the absolute-path rule independent of host.
+�?  ?When in doubt between two hosts, prefer the cross-platform form
+  (??python -m <module>?? over either ??python scripts\foo.py?? or
+  ??python scripts/foo.py??) until you have confirmation.
+
+9.2 Universal rules (apply on every host)
+
+Runner-level or language-level constraints � independent of shell.
+�?  ?**Pre-proposal command lint � run this FIRST, before every
+  ??run_command??, never after a hang.** Scan the exact command
+  string for banned tokens; a single occurrence in a not-yet-run
+  command is already a violation (the gate is preventive, not the
+  reactive "after two failures" rule below). Hard-stop tokens, each
+  forcing a rewrite to a file-backed ??scripts/_<purpose>.py??:
+  ??<<?? / ??<<-?? and here-strings (heredoc ban), ??cd �;?? / ??cd � &&??
+  (working-directory chaining � use ??Cwd??), ??$?? shell expansion
+  including ??${arr[@]}?? / ??$(...)?? / ??$VAR?? (the runner strips it),
+  ??-exec � {} \;??, ??cmd /c??, AND any ??python -c?? / ??python3 -c?? /
+  ??py -c?? whose body spans more than one line (contains a literal
+  newline) OR contains ??:?? / ??/?? / ??\?? / a dotted import / a format
+  string / ??chr(?? / quoting beyond a single matched pair �
+  INCLUDING a ??� | python -c "�"?? pipe. A multi-line ??-c?? body
+  leaves the shell at a ??dquote>?? continuation prompt and HANGS
+  until cancelled; an over-length line hits the macOS ~1024-byte
+  ??MAX_CANON?? truncation and is silently cut mid-body; same failure
+  class as a heredoc (see the dedicated ??python -c?? bullet below).
+  The need for iteration, env vars, multi-line logic, arrays,
+  string interpolation, or ANY non-trivial inline Python IS the
+  signal to write the script file � full stop, no inline attempt
+  first. The lint ALSO measures total length (next bullet).
+�?  ?**Hard ~1024-byte ceiling on the ENTIRE command string � not just
+  ??python -c?? bodies.** macOS canonical-mode tty input truncates at
+  ??MAX_CANON?? (~1024 bytes); an over-length ??CommandLine?? is silently
+  cut mid-token and then errors or � worse � runs a corrupted prefix.
+  This bites ANY command, most often a long ??&&?? / ??;?? chain of
+  otherwise-legitimate invocations (e.g. eight back-to-back `python
+  scripts/l3_respond/update_doc_gap_status.py �` writes) or one call carrying
+  several long quoted ??--note?? args. NEVER chain multiple invocations
+  into a single line to save round-trips. Instead: (i) issue each
+  invocation as its OWN ??run_command?? call, or (ii) when the batch is
+  large or must run atomically, write a file-backed
+  ??scripts/_<purpose>.py?? driver and run it once. Budget the bytes
+  before proposing � repo paths are long (the OneDrive prefix alone is
+  ~95 bytes); if a single command approaches ~800 bytes, split it.
+�?  ?*Working directory* goes through ??run_command??'s ??Cwd?? parameter.
+  NEVER chain ??cd <path>; <cmd>?? or ??cd <path> && <cmd>?? into the
+  command-line string. Cascade's runner rejects it on every platform.
+�?  ?**No ??python -c "..."?? (nor ??python3 -c?? / ??py -c??) for anything
+  MULTI-LINE, piped (??� | python -c "�"??), or containing ??:??, ??/??,
+  ??\??, dotted imports, format strings, ??chr(??, or quoting beyond a
+  single matched pair.** Three independent failure modes converge
+  here: a multi-line ??-c?? body leaves the shell at a ??dquote>??
+  prompt and HANGS; an over-length line hits the macOS ~1024-byte
+  ??MAX_CANON?? truncation; and the safety filter rejects the
+  ??:??/path/import/format-string forms on every host. This is the
+  same class as the heredoc ban � a ??python -c?? that needs more
+  than one trivial single-line statement is the signal to write a
+  file, never to "try inline once". Workarounds in
+  preference order:
+  1. One-shot helper at ??scripts/_<purpose>.py?? (leading underscore
+     = throwaway; invoke as ??python scripts/_<purpose>.py?? on Unix
+     or ??py scripts\_<purpose>.py?? on Windows). Handles every
+     failure mode.
+  2. Direct module: ??python -m <module> <args>?? when the helper is
+     a real module.
+  There is NO third option. Heredocs are banned � see the next
+  bullet.
+�?  ?**Heredocs and any stdin-fed multi-line program are PERMANENTLY
+  BANNED on every host.** This includes ??python - <<'PY' � PY??,
+  ??python3 - <<EOF??, ??bash <<'SH'??, ??cat <<'X'??, the PowerShell
+  here-string forms ??python -c @"�"@?? and ??@'�'@??, and any
+  ??<<??/??<<-?? redirection feeding a program on stdin. The Cascade
+  ??run_command?? runner does NOT stream the heredoc body to the
+  process's stdin: the shell blocks on an EOF that never arrives
+  and the command HANGS until cancelled. This is deterministic,
+  not intermittent. There is no "last resort" exception. When you
+  need a multi-line program, write ??scripts/_<purpose>.py?? and run
+  it with ??python scripts/_<purpose>.py?? (Unix) / `py
+  scripts\_<purpose>.py` (Windows), then delete it per the
+  Keep it simple probe-cleanup rule. A proposed command
+  containing ??<<?? is a rule violation at the same severity as
+  ??cd <path> && <cmd>?? and ??find � -exec {} \;??.
+�?  ?**??$variable?? references inside ??run_command?? strings are stripped
+  by the Cascade runner** on every host. When per-line iteration,
+  env-var assignment, or stopwatch timing is needed, write a
+  file-backed Python script instead. Bare ??$LASTEXITCODE?? / ??$???
+  inspection should be replaced by trusting the runner's `Exit
+  code:` line.
+�?  ?*Exit codes are the truth, not stream surface.* Python tools
+  (structlog, pytest, ruff) write normal output to stderr. Trust
+  the runner's ??Exit code:?? line over any tagged-error appearance
+  in the stream.
+�?  ?*Destructive ops require operator approval* � never auto-run.
+  Windows: ??Remove-Item??, ??Move-Item??, ??rd /s??. Unix: ??rm??, `rm
+  -rf`, ??mv?? across directories, ??find ... -delete??. Propose with
+  ??SafeToAutoRun=false??. (Exception: ??scripts/_*?? probe artefacts �
+  see Keep it simple.)
+�?  ?**After two failures of the same shell incantation, switch to a
+  file-backed Python script.** After two cancellations of the same
+  conceptual operation, stop and ask the operator. Do not propose a
+  third variant.
+�?  ?*Quote paths that contain spaces or special characters.* The
+  workspace root contains a space and a dash on every host.
+�?  ?**Capture targets MUST live outside the directory being
+  enumerated.** Recursive listing/grep that tees its output into a
+  file inside the search root feeds back on itself and fills the
+  disk (PowerShell ??Get-ChildItem -Recurse � | Tee-Object??; bash
+  ??find � | tee??).
+�?  ?*Workspace-wide search goes through indexed search*
+  (??grep_search?? / ??find_by_name??), never through a recursive shell
+  scan. Use a recursive shell scan only with a tightly-scoped path
+  argument.
+�? 
+  ?**Never mutate file contents through shell redirection or
+  cmdlets.** Heredocs writing to a path, ??>??/??>>?? redirection,
+  PowerShell ??Add-Content??/??Set-Content??, here-strings, and shell
+  ??printf >file?? are unreliable for anything with quotes, YAML/JSON
+  indentation, or non-ASCII. Use ??edit?? / ??multi_edit?? for surgical
+  in-place changes, ??write_to_file?? for new files, and a
+  ??scripts/_<purpose>.py?? for everything else. The shell is for
+  filesystem ops (move, remove, list) and read-only pipelines only.
+�?  ?*Go Python-first for bulk or templated file mutations.* When
+  the change would paste >10 templated entries, exceed ~300
+  generated lines, depend on per-row computed metadata (sha256,
+  size, formatted dates), or require idempotency via a marker
+  comment, write a ??scripts/_<purpose>.py?? from the start. Do not
+  burn two ??edit?? / ??multi_edit?? attempts first. (For residue
+  cleanup, see the delete-or-promote rule in Keep it simple.)
+
+9.3 Windows / PowerShell only
+
+Apply ONLY when the detected shell is PowerShell (??pwsh??,
+??powershell??).
+
+�?  ?*Unix utilities are NOT on PATH*: ??rg??, ??grep??, ??tail??, ??head??,
+  ??wc??, ??cat??, ??sed??, ??awk??, ??find??. Never propose them. Use
+  indexed search (??grep_search?? / ??find_by_name??) or PowerShell
+  equivalents (??Select-String??, ??Get-Content -Tail??,
+  ??Get-ChildItem??).
+�?  ?*Path quoting*: PowerShell paths MUST be double-quoted or use
+  ??-LiteralPath??. Backslash is the separator; mixing forward
+  slashes works in most cmdlets but breaks in literal-path
+  scenarios.
+�?  ?*Output capture*: ??<command> *> <path>?? merges all six
+  PowerShell streams into a file. Use for
+  ??static-checks/<tool>.out.txt??. Avoid ??2>&1 | Select-Object?? for
+  capture � it tags stderr lines as ??RemoteException?? and corrupts
+  audit trails. Use ??2>&1?? only for live interactive filtering
+  through ??Select-String??.
+�?  ?*??RemoteException?? is a stream artefact, not a failure* when
+  the actual ??Exit code:?? is ??0??. PowerShell flags any stderr text
+  as an error record under default ??$ErrorActionPreference??.
+�?  ?*Fragmented-looking echo* (a fragment line followed by the real
+  output) = PSReadLine prediction overlapping with runner
+  truncation, NOT a real error. Trust ??Exit code:?? and the tail
+  content. Never re-issue, split, or rewrite a command on the
+  strength of a fragmented echo.
+�?  ?*Here-strings are BANNED* (see the universal heredoc ban).
+  ??python -c @"??�??"@?? and ??@'??�??'@?? hang the runner the same way
+  Unix heredocs do. Use ??scripts\_<purpose>.py?? � there is no
+  here-string fallback.
+�?  ?**??cmd /c "..."?? / ??cmd /k "..."?? and any ??cmd /<flag> "..."??
+  incantation are permanently banned** � the ??/c?? trips the safety
+  filter as a path-shaped token (`command contains path outside
+  workspace: /c`). Do not burn attempts on them.
+�?  ?*Banned*: recursive ??Select-String?? over the workspace root.
+  Use only with a tightly-scoped ??-Path 'src\foo\*.py'??.
+�?  ?*Non-ASCII stdout from a Python child crashes on Windows / PS.*
+  Python's default stdout uses cp1252; any ?????, ??�??, ??�??, em-dash,
+  smart-quote, or box-drawing glyph emitted via ??print()?? raises
+  ??UnicodeEncodeError: 'charmap' codec can't encode character ...??
+  and the process exits non-zero before useful output lands. Assume
+  the hazard for every CLI that touches BR / MX / AR / UY / CL /
+  ES / PT chunk text or rendering glyphs (e.g.
+  ??cards_query.py --format markdown??).
+  1. *Permanent fix (preferred).* Any ??scripts/?? entry that may
+     emit non-ASCII SHALL call `sys.stdout.reconfigure(encoding=
+     "utf-8", errors="replace")` and the matching ??sys.stderr??
+     line near the top of ??main()??. Fix upstream so the call site
+     stays clean; never paper over with per-invocation tricks when
+     the script is editable.
+  2. *Per-call workaround.* When the script genuinely can't be
+     edited in the same turn, prefix with `py -X utf8 scripts\<name>.py
+     ...` (PEP 540 UTF-8 mode). One token, no env mutation, no
+     quoting hazards.
+  3. *Do NOT retry ??$env:PYTHONIOENCODING=...??* � the ??$?? is
+     stripped by the runner per the universal rule above.
+�?  ?*Display mojibake is a SEPARATE layer, and the pipe is hostile.*
+  Once Python writes UTF-8 cleanly, PowerShell 5.1's OEM console
+  (cp850 / cp437) still mis-renders the bytes on screen, AND
+  ??Out-File -Encoding utf8?? writes double-encoded mojibake
+  (??�?? ? ???�??, ????? ? ????) because PS decodes the native pipe
+  through ??[Console]::OutputEncoding?? (OEM) before re-encoding to
+  UTF-8. ??chcp 65001?? alone does NOT fix this � it only changes the
+  console display codepage, not the pipe-read codepage. The working
+  incantations (no ??$??, no ??cmd /c??):
+  - *Pipe to a UTF-8 file and read back with ??read_file??:* prefix
+    with ??[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;??
+    so PS reads Python's stdout as UTF-8, then pipe to `Out-File
+    -Encoding utf8 scripts\_<purpose>.out.txt`. Drop ??2>&1?? so PS's
+    own ??RemoteException?? wrapper noise stays out of the captured
+    file. Example: `[Console]::OutputEncoding =
+    [System.Text.Encoding]::UTF8; py scripts\cards_query.py
+    --search "..." --format markdown | Out-File -Encoding utf8
+    scripts\_query.out.txt`
+  - *Live-render in the same PS session:* also run
+    ??[Console]::OutputEncoding = [System.Text.Encoding]::UTF8?? once
+    at session start, plus ??chcp 65001?? if the console font
+    supports the glyph set.
+  The static-property accessor ??[Type]::Member = ...?? does NOT use
+  ??$??, so the prelude is permitted by the ??run_command?? safety
+  filter. Trust the file produced via this incantation; never trust
+  a file written without the prelude.
+
+9.4 Unix / bash / zsh only
+
+Apply ONLY when the detected shell is ??bash??, ??zsh??, ??sh??, or
+??fish??.
+
+�?  ?*PowerShell cmdlets and operators do not exist*: ??Select-String??,
+  ??Get-ChildItem??, ??Tee-Object??, ??Out-String??, ??-LiteralPath??, ??*>??,
+  ??@"..."@??. Never propose them on a Unix host. Use ??rg?? /
+  ??grep_search??, ??ls?? / ??find_by_name??, ??tee??, ??>file 2>&1??.
+�?  ?*Output capture*: ??<command> >file 2>&1?? merges stdout + stderr
+  into a file. Use for ??static-checks/<tool>.out.txt??. ??tee?? is the
+  equivalent of ??Tee-Object?? (??<cmd> 2>&1 | tee <path>??).
+�?  ?*Heredocs are BANNED* (see the universal heredoc ban).
+  ??python - <<'PY'?? � ??PY??, ??python3 - <<EOF??, ??cat <<'X'??, and
+  every other ??<<??/??<<-?? form hang the runner because the body is
+  never streamed to stdin. Use ??scripts/_<purpose>.py?? � there is
+  no heredoc fallback, regardless of quoting.
+�?  ?*Path quoting*: single or double quotes around paths with
+  spaces; backslash-escape special characters. Forward slash is the
+  separator.
+�?  ?*Non-ASCII stdout is usually fine* � modern macOS and Linux
+  terminals default to UTF-8 (??LANG=*.UTF-8??). The Windows
+  cp1252 / OEM mojibake hazards above do NOT apply. If a script is
+  ever run cross-platform, the upstream `sys.stdout.reconfigure(
+  encoding="utf-8", errors="replace")` fix from the Windows rules
+  is still the correct permanent solution.
+�?  ?*Destructive ops* still need ??SafeToAutoRun=false??. ??rm -rf??,
+  ??mv?? across directories, and ??find ... -delete?? are
+  irrecoverable on most Unix filesystems (no OneDrive recycle bin
+  fallback). Be more cautious than on Windows, not less.
+�?  ?*??find ... -exec <cmd> {} \;?? is permanently banned* � the
+  trailing ??\;?? trips the Cascade ??run_command?? safety filter as a
+  path-shaped token (??command contains path outside workspace: /;??).
+  Same class of rejection as the Windows ??cmd /c "..."?? ban. Do not
+  burn attempts on it. Use one of these alternatives in preference
+  order:
+  1. Plain ??find <dir> <predicates>?? (no ??-exec??): emits matching
+     paths to stdout. Read them back and act on them in the next
+     turn. Sufficient for "what files match?" probes.
+  2. ??find <dir> <predicates> -print0 | xargs -0 <cmd>??: the
+     null-delimited pipe is safe-filter clean and survives paths
+     with spaces. Use when you need ??<cmd>?? to run per match in
+     one shot.
+  3. ??ls -lRt <dir> | head -<N>?? for "newest files under a tree"
+     probes. BSD ??ls?? on macOS supports ??-R?? and ??-t??; pair with
+     ??head?? to bound the output.
+  4. ??scripts/_<purpose>.py?? walking with ??pathlib.Path.rglob?? +
+     ??Path.stat()?? when the predicate is non-trivial (mtime
+     windows, size thresholds, sha256 fingerprints, etc.). Always
+     the right answer for anything beyond a one-liner.
+�?  ?*GNU ??find -printf?? is absent on macOS BSD find.* Probes that
+  copy-paste a GNU pattern (e.g. ??-printf '%T+ %s %p\n'??) silently
+  fail with ??find: -printf: unknown primary or operator??. Use
+  ??-print?? for paths only, or fall through to a Python helper for
+  formatted per-file metadata (mtime, size). Linux Unix shells DO
+  have GNU find and the flag works there; detect with ??uname -s??
+  if cross-platform support is needed.
+* 
