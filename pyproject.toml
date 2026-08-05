@@ -3,17 +3,30 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "agentsmd"
+name = "agentsmd-generator"
 version = "0.1.0"
-description = "MCP server and operator CLI for the AgentsMDGenerator prompt catalogue"
+description = "MCP server and operator CLI that generates AGENTS.md from a curated prompt catalogue"
+readme = "INSTALL.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
+authors = [{ name = "fernandoantoncodeia" }]
+keywords = ["mcp", "agents.md", "prompt-catalogue", "llm", "agents"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Code Generators",
+]
 dependencies = [
     "mcp>=2.0.0",
     "click>=8.0.0",
     "pyyaml>=6.0.0",
     "requests>=2.28.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/fernandoantoncodeia/AgentsMDGenerator"
+Repository = "https://github.com/fernandoantoncodeia/AgentsMDGenerator"
 
 [project.scripts]
 agentsmd = "agentsmd.cli:main"
