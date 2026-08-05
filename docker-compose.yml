@@ -1,9 +1,0 @@
-services:
-  agentsmd:
-    build: .
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./prompt-catalogue:/app/prompt-catalogue:ro
-    environment:
-      - PYTHONUNBUFFERED=1

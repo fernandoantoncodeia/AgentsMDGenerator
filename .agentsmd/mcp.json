@@ -1,0 +1,4 @@
+{
+  "serverUrl": "bin/agentsmd-serve",
+  "transport": "stdio"
+}

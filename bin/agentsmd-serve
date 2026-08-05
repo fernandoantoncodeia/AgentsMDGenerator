@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Launch the agentsmd MCP server over stdio from the master repo root.
+# Self-locating: works regardless of the caller's current directory.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+exec python3 -m agentsmd.server --transport stdio "$@"

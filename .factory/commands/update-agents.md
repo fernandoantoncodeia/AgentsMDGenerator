@@ -3,7 +3,7 @@ description: Generate or refresh AGENTS.md from the central prompt catalogue via
 argument-hint: "[path?]   (optional target repo path; defaults to the current working directory)"
 ---
 
-The operational behaviour and guardrails live in the skill at `.claude/skills/update-agents/SKILL.md`. Read that skill before invoking the workflow.
+The operational behaviour and guardrails live in the skill at `.factory/skills/update-agents/SKILL.md`. Read that skill before invoking the workflow.
 
 `/update-agents` is now an MCP client. The consumer project no longer hosts a local `prompt-catalogue/`. The server launches locally over stdio. Configure it via one of:
 

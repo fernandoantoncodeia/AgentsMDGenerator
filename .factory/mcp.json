@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "agentsmd": {
+      "type": "stdio",
+      "command": "bin/agentsmd-serve",
+      "connectTimeout": 30000,
+      "disabled": false
+    }
+  }
+}
