@@ -12,10 +12,9 @@ import yaml
 
 from .trim import MAX_BULLET_LEN, dedupe, levenshtein, pre_trim, scan_bullets
 
-CATALOGUE_DIR = Path("prompt-catalogue")
-CURATED_DIR = CATALOGUE_DIR / "curated"
-PROPOSED_DIR = CATALOGUE_DIR / "proposed"
 MAX_CATEGORY_LINES = 100
+
+_ROOT_OVERRIDE: Path | None = None
 
 
 class CatalogueError(Exception):
@@ -34,10 +33,80 @@ class CategoryMeta:
     heuristic: bool
 
 
+def set_catalogue_root(path: str | Path | None) -> None:
+    """Set an explicit catalogue-root override (highest precedence)."""
+    global _ROOT_OVERRIDE
+    _ROOT_OVERRIDE = Path(path).expanduser() if path else None
+
+
+def _bundled_catalogue_dir() -> Path | None:
+    base = Path(__file__).parent / "_assets" / "prompt-catalogue"
+    return base if (base / "curated").is_dir() else None
+
+
+def _normalize(candidate: Path) -> Path | None:
+    if (candidate / "curated").is_dir():
+        return candidate
+    if (candidate / "prompt-catalogue" / "curated").is_dir():
+        return candidate / "prompt-catalogue"
+    return None
+
+
+def resolve_catalogue_dir() -> Path:
+    """Resolve the prompt-catalogue directory or raise CatalogueError.
+
+    Precedence: explicit override > AGENTSMD_CATALOGUE_ROOT > ./prompt-catalogue
+    > read-only bundled snapshot shipped in the installed package.
+    """
+    candidates: list[Path] = []
+    if _ROOT_OVERRIDE is not None:
+        candidates.append(_ROOT_OVERRIDE)
+    env = os.environ.get("AGENTSMD_CATALOGUE_ROOT")
+    if env:
+        candidates.append(Path(env).expanduser())
+    candidates.append(Path("prompt-catalogue"))
+    for candidate in candidates:
+        norm = _normalize(candidate)
+        if norm is not None:
+            return norm
+    bundled = _bundled_catalogue_dir()
+    if bundled is not None:
+        return bundled
+    raise CatalogueError(
+        "catalogue not found; provide it via --catalogue-root, the "
+        "AGENTSMD_CATALOGUE_ROOT environment variable, a prompt-catalogue/ "
+        "directory in the current directory, or the package's bundled snapshot"
+    )
+
+
+def catalogue_is_read_only() -> bool:
+    """Return True when the resolved catalogue is the bundled read-only snapshot."""
+    bundled = _bundled_catalogue_dir()
+    if bundled is None:
+        return False
+    try:
+        return resolve_catalogue_dir().resolve() == bundled.resolve()
+    except CatalogueError:
+        return False
+
+
+def curated_dir() -> Path:
+    return resolve_catalogue_dir() / "curated"
+
+
+def proposed_dir() -> Path:
+    return resolve_catalogue_dir() / "proposed"
+
+
 def _ensure_catalogue_root() -> None:
-    if not CATALOGUE_DIR.is_dir():
-        raise CatalogueError(
-            "not in the AgentsMDGenerator master repo; prompt-catalogue/ not found"
+    resolve_catalogue_dir()
+
+
+def _require_writable() -> None:
+    if catalogue_is_read_only():
+        raise RefusalError(
+            "resolved catalogue is the read-only bundled snapshot; set a writable "
+            "root via --catalogue-root or AGENTSMD_CATALOGUE_ROOT to make changes"
         )
 
 
@@ -116,9 +185,10 @@ def list_curated() -> list[CategoryMeta]:
     """Return metadata for all curated categories."""
     _ensure_catalogue_root()
     result: list[CategoryMeta] = []
-    if not CURATED_DIR.exists():
+    curated = curated_dir()
+    if not curated.exists():
         return result
-    for path in sorted(CURATED_DIR.glob("*.md")):
+    for path in sorted(curated.glob("*.md")):
         try:
             data, _ = _read_category(path)
         except FileNotFoundError:
@@ -137,15 +207,16 @@ def list_curated() -> list[CategoryMeta]:
 def list_proposed() -> list[str]:
     """Return the names of all proposed categories."""
     _ensure_catalogue_root()
-    if not PROPOSED_DIR.exists():
+    proposed = proposed_dir()
+    if not proposed.exists():
         return []
-    return sorted(p.stem for p in PROPOSED_DIR.glob("*.md"))
+    return sorted(p.stem for p in proposed.glob("*.md"))
 
 
 def read_body(name: str, proposed: bool = False) -> str | None:
     """Return the body of a category, or None if absent."""
     _ensure_catalogue_root()
-    directory = PROPOSED_DIR if proposed else CURATED_DIR
+    directory = proposed_dir() if proposed else curated_dir()
     path = directory / f"{name}.md"
     if not path.exists():
         return None
@@ -156,7 +227,7 @@ def read_body(name: str, proposed: bool = False) -> str | None:
 def read_frontmatter(name: str, proposed: bool = False) -> dict:
     """Return the frontmatter of a category, or {} if absent."""
     _ensure_catalogue_root()
-    directory = PROPOSED_DIR if proposed else CURATED_DIR
+    directory = proposed_dir() if proposed else curated_dir()
     path = directory / f"{name}.md"
     if not path.exists():
         return {}
@@ -173,7 +244,8 @@ def _add_bullets(
 ) -> tuple[Path, list[str]]:
     """Append bullets to a category file, applying the pre-trim pass."""
     _ensure_catalogue_root()
-    directory = PROPOSED_DIR if proposed else CURATED_DIR
+    _require_writable()
+    directory = proposed_dir() if proposed else curated_dir()
     if not proposed:
         raise CatalogueError("direct writes to curated/ are not allowed")
 
@@ -236,11 +308,12 @@ def addcategory(
 ) -> tuple[Path, list[str]]:
     """Create a proposed category file with a starter body."""
     _ensure_catalogue_root()
-    if (CURATED_DIR / f"{name}.md").exists():
+    _require_writable()
+    if (curated_dir() / f"{name}.md").exists():
         raise RefusalError(
             f"category already in curated; use curatecontent to refine the existing curated entry"
         )
-    if (PROPOSED_DIR / f"{name}.md").exists():
+    if (proposed_dir() / f"{name}.md").exists():
         raise RefusalError(
             f"category already in proposed; use addcontent to append to it"
         )
@@ -266,7 +339,7 @@ def addcategory(
         "title": title or _default_title(name),
         "trigger": trigger,
     }
-    path = PROPOSED_DIR / f"{name}.md"
+    path = proposed_dir() / f"{name}.md"
     _write_category(path, data, _render_bullets(trimmed))
     return path, logs
 
@@ -313,8 +386,9 @@ def _suggest_fix(body: str) -> list[str]:
 def curatecontent(category: str, force: bool = False) -> Path:
     """Merge a proposed category into the curated category."""
     _ensure_catalogue_root()
-    proposed_path = PROPOSED_DIR / f"{category}.md"
-    curated_path = CURATED_DIR / f"{category}.md"
+    _require_writable()
+    proposed_path = proposed_dir() / f"{category}.md"
+    curated_path = curated_dir() / f"{category}.md"
 
     if not proposed_path.exists():
         raise RefusalError(f"no proposed entry for {category}")
@@ -368,8 +442,9 @@ def curatecontent(category: str, force: bool = False) -> Path:
 def curatecategory(name: str, force: bool = False) -> Path:
     """Promote a proposed category to curated."""
     _ensure_catalogue_root()
-    proposed_path = PROPOSED_DIR / f"{name}.md"
-    curated_path = CURATED_DIR / f"{name}.md"
+    _require_writable()
+    proposed_path = proposed_dir() / f"{name}.md"
+    curated_path = curated_dir() / f"{name}.md"
 
     if not proposed_path.exists():
         raise RefusalError(f"no proposed entry for {name}")
@@ -401,7 +476,7 @@ def self_discipline_scan() -> list[tuple[str, list[str]]]:
     """Scan all curated categories and return findings per file."""
     _ensure_catalogue_root()
     results: list[tuple[str, list[str]]] = []
-    for path in sorted(CURATED_DIR.glob("*.md")):
+    for path in sorted(curated_dir().glob("*.md")):
         data, body = _read_category(path)
         findings: list[str] = []
         lines = body.splitlines()

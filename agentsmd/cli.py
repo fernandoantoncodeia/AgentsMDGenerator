@@ -11,19 +11,23 @@ import click
 from . import catalogue
 
 
-def _ensure_master_repo() -> None:
-    if not Path("prompt-catalogue").is_dir():
-        click.echo(
-            "error: not in the AgentsMDGenerator master repo; prompt-catalogue/ not found",
-            err=True,
-        )
+def _resolve_or_exit() -> None:
+    try:
+        catalogue.resolve_catalogue_dir()
+    except catalogue.CatalogueError as e:
+        click.echo(f"error: {e}", err=True)
         sys.exit(1)
 
 
 @click.group()
-def main() -> None:
+@click.option(
+    "--catalogue-root",
+    default=None,
+    help="Path to the prompt-catalogue directory (or a directory containing it)",
+)
+def main(catalogue_root: str | None) -> None:
     """agentsmd — operator CLI for the AgentsMDGenerator catalogue."""
-    pass
+    catalogue.set_catalogue_root(catalogue_root)
 
 
 @main.command()
@@ -33,7 +37,7 @@ def main() -> None:
 @click.option("--title", help="Category title for new files")
 def addcontent(category: str, body: str, no_trim_tails: bool, title: str | None) -> None:
     """Append a pre-trimmed entry to a proposed category."""
-    _ensure_master_repo()
+    _resolve_or_exit()
     try:
         path, logs = catalogue.addcontent(
             category, body, title=title, no_trim_tails=no_trim_tails
@@ -53,7 +57,7 @@ def addcontent(category: str, body: str, no_trim_tails: bool, title: str | None)
 @click.option("--title", help="Category title")
 def addcategory(name: str, trigger: str, body: str, title: str | None) -> None:
     """Create a proposed category with a starter body."""
-    _ensure_master_repo()
+    _resolve_or_exit()
     try:
         path, logs = catalogue.addcategory(name, trigger, body, title=title)
         click.echo(f"addcategory: wrote {path}")
@@ -69,7 +73,7 @@ def addcategory(name: str, trigger: str, body: str, title: str | None) -> None:
 @click.option("--force", is_flag=True, help="Override size/bullet-length caps")
 def curatecontent(category: str, force: bool) -> None:
     """Merge a proposed category into curated."""
-    _ensure_master_repo()
+    _resolve_or_exit()
     try:
         path = catalogue.curatecontent(category, force=force)
         click.echo(f"curatecontent: promoted {path}")
@@ -83,7 +87,7 @@ def curatecontent(category: str, force: bool) -> None:
 @click.option("--force", is_flag=True, help="Override size/bullet-length caps")
 def curatecategory(name: str, force: bool) -> None:
     """Promote a proposed category to curated."""
-    _ensure_master_repo()
+    _resolve_or_exit()
     try:
         # Check for remap candidates: other proposed entries with overlapping trigger text
         proposed = catalogue.list_proposed()
@@ -106,7 +110,7 @@ def curatecategory(name: str, force: bool) -> None:
 @main.command()
 def list_cmd() -> None:
     """List curated and proposed categories."""
-    _ensure_master_repo()
+    _resolve_or_exit()
     curated = {c.name for c in catalogue.list_curated()}
     proposed = set(catalogue.list_proposed())
     click.echo("Curated:")
@@ -125,7 +129,7 @@ def list_cmd() -> None:
 @main.command()
 def status() -> None:
     """Run the catalog self-discipline scan."""
-    _ensure_master_repo()
+    _resolve_or_exit()
     results = catalogue.self_discipline_scan()
     for name, findings in results:
         for finding in findings:
@@ -140,7 +144,7 @@ def status() -> None:
 )
 def browsecontent(source: tuple[str, ...]) -> None:
     """Fetch six canonical sources, diff, and emit suggested commands."""
-    _ensure_master_repo()
+    _resolve_or_exit()
     canonical = [
         "https://agents.md/",
         "https://github.com/agentsmd/agents.md",

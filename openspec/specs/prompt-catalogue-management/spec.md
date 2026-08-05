@@ -226,15 +226,19 @@ Every invocation of `/update-agents` (whose capability is `agents-md-generation`
 - **THEN** the file is flagged in the `Catalog self-discipline check:` section as `missing trigger:` (HARD). The workflow still splices the body but the file is named in the summary; the operator is expected to invoke `agentsmd curatecontent <category>` in the master repo to repair the file.
 
 ### Requirement: Catalogue lives only in the AgentsMDGenerator master repo
-The catalogue SHALL NOT be embedded in or copied to consumer projects. The only canonical copy is the `prompt-catalogue/` directory in the AgentsMDGenerator master repo. The MCP server serves this directory. Consumer projects read from the server and never host a local copy.
+The single canonical, writable copy of the catalogue SHALL be the `prompt-catalogue/` directory in the AgentsMDGenerator master repo. The distributed package MAY ship a read-only snapshot of `curated/` for offline reads; this snapshot lives inside the installed package, SHALL never be written to, and is not a copy inside consumer project source. Consumer projects SHALL NOT host a `prompt-catalogue/` directory in their source tree.
 
 #### Scenario: Master repo contains the catalogue
 - **WHEN** the operator inspects the AgentsMDGenerator master repo
-- **THEN** `prompt-catalogue/curated/` and `prompt-catalogue/proposed/` exist and are the only canonical catalogue locations
+- **THEN** `prompt-catalogue/curated/` and `prompt-catalogue/proposed/` exist and are the only canonical writable catalogue locations
 
 #### Scenario: Consumer project does not contain the catalogue
 - **WHEN** the operator inspects a consumer project after running `/update-agents`
-- **THEN** there is no `prompt-catalogue/` directory, and the generated AGENTS.md does not depend on one
+- **THEN** there is no `prompt-catalogue/` directory in the project source, and the generated AGENTS.md does not depend on one
+
+#### Scenario: Distributed package may ship a read-only snapshot
+- **WHEN** the package is installed via pip or pipx
+- **THEN** it MAY contain a read-only `curated/` snapshot used only to serve reads when no writable root is configured, and write operations against it are refused
 
 ### Requirement: MCP curation tools are restricted to operators
 The MCP tools `catalogue_curatecontent` and `catalogue_curatecategory` SHALL require an operator credential or transport origin. When called by a project skill, the MCP server SHALL refuse with an explicit error. The `agentsmd` CLI in the master repo is the primary operator surface for curation.

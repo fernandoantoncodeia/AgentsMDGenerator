@@ -214,11 +214,21 @@ async def fetch_sources_tool(urls: list[str]) -> dict[str, Any]:
 )
 @click.option("--port", default=3000, help="Port for SSE transport")
 @click.option("--host", default="127.0.0.1", help="Host for SSE transport")
-def main(transport: str, port: int, host: str) -> None:
+@click.option(
+    "--catalogue-root",
+    default=None,
+    help="Path to the prompt-catalogue directory (or a directory containing it)",
+)
+def main(transport: str, port: int, host: str, catalogue_root: str | None) -> None:
     """Run the agentsmd MCP server."""
-    if not Path("prompt-catalogue").is_dir():
-        click.echo("error: not in the AgentsMDGenerator master repo; prompt-catalogue/ not found", err=True)
+    catalogue.set_catalogue_root(catalogue_root)
+    try:
+        resolved = catalogue.resolve_catalogue_dir()
+    except catalogue.CatalogueError as e:
+        click.echo(f"error: {e}", err=True)
         sys.exit(1)
+    if catalogue.catalogue_is_read_only():
+        click.echo(f"serving read-only bundled catalogue snapshot at {resolved}", err=True)
 
     if transport == "stdio":
         asyncio.run(server.run_stdio_async())
