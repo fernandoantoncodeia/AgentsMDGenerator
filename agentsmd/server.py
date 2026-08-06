@@ -223,12 +223,10 @@ def main(transport: str, port: int, host: str, catalogue_root: str | None) -> No
     """Run the agentsmd MCP server."""
     catalogue.set_catalogue_root(catalogue_root)
     try:
-        resolved = catalogue.resolve_catalogue_dir()
+        catalogue.resolve_catalogue_dir()
     except catalogue.CatalogueError as e:
         click.echo(f"error: {e}", err=True)
         sys.exit(1)
-    if catalogue.catalogue_is_read_only():
-        click.echo(f"serving read-only bundled catalogue snapshot at {resolved}", err=True)
 
     if transport == "stdio":
         asyncio.run(server.run_stdio_async())

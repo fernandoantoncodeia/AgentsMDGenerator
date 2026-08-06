@@ -42,6 +42,5 @@ dev = [
 packages = ["agentsmd"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"prompt-catalogue/curated" = "agentsmd/_assets/prompt-catalogue/curated"
 ".factory/skills/update-agents/SKILL.md" = "agentsmd/_assets/workflow/skills/update-agents/SKILL.md"
 ".factory/commands/update-agents.md" = "agentsmd/_assets/workflow/commands/update-agents.md"

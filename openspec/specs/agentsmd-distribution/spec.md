@@ -3,17 +3,6 @@
 ## Purpose
 TBD - created by archiving change portable-catalogue-and-installer. Update Purpose after archive.
 ## Requirements
-### Requirement: Package bundles a read-only curated snapshot
-The distributed package SHALL include a read-only snapshot of `curated/` so a PATH-installed `agentsmd-server` can serve curated reads from any directory without a repo checkout. The snapshot SHALL be used only as the lowest-precedence catalogue source and SHALL never be written to.
-
-#### Scenario: Snapshot ships in the wheel
-- **WHEN** the wheel is built and inspected
-- **THEN** it contains the curated category markdown files under a package data path
-
-#### Scenario: Snapshot serves reads after pipx install
-- **WHEN** `agentsmd-server` is started from an arbitrary directory after `pipx install`
-- **THEN** curated categories are readable over MCP without any repo checkout or environment variable
-
 ### Requirement: Package bundles the update-agents workflow assets
 The distributed package SHALL include the `update-agents` skill and slash-command source so the installer can provision them without a repo checkout.
 

@@ -39,11 +39,6 @@ def set_catalogue_root(path: str | Path | None) -> None:
     _ROOT_OVERRIDE = Path(path).expanduser() if path else None
 
 
-def _bundled_catalogue_dir() -> Path | None:
-    base = Path(__file__).parent / "_assets" / "prompt-catalogue"
-    return base if (base / "curated").is_dir() else None
-
-
 def _normalize(candidate: Path) -> Path | None:
     if (candidate / "curated").is_dir():
         return candidate
@@ -55,8 +50,7 @@ def _normalize(candidate: Path) -> Path | None:
 def resolve_catalogue_dir() -> Path:
     """Resolve the prompt-catalogue directory or raise CatalogueError.
 
-    Precedence: explicit override > AGENTSMD_CATALOGUE_ROOT > ./prompt-catalogue
-    > read-only bundled snapshot shipped in the installed package.
+    Precedence: explicit override > AGENTSMD_CATALOGUE_ROOT > ./prompt-catalogue.
     """
     candidates: list[Path] = []
     if _ROOT_OVERRIDE is not None:
@@ -69,25 +63,11 @@ def resolve_catalogue_dir() -> Path:
         norm = _normalize(candidate)
         if norm is not None:
             return norm
-    bundled = _bundled_catalogue_dir()
-    if bundled is not None:
-        return bundled
     raise CatalogueError(
         "catalogue not found; provide it via --catalogue-root, the "
-        "AGENTSMD_CATALOGUE_ROOT environment variable, a prompt-catalogue/ "
-        "directory in the current directory, or the package's bundled snapshot"
+        "AGENTSMD_CATALOGUE_ROOT environment variable, or a prompt-catalogue/ "
+        "directory in the current directory"
     )
-
-
-def catalogue_is_read_only() -> bool:
-    """Return True when the resolved catalogue is the bundled read-only snapshot."""
-    bundled = _bundled_catalogue_dir()
-    if bundled is None:
-        return False
-    try:
-        return resolve_catalogue_dir().resolve() == bundled.resolve()
-    except CatalogueError:
-        return False
 
 
 def curated_dir() -> Path:
@@ -100,14 +80,6 @@ def proposed_dir() -> Path:
 
 def _ensure_catalogue_root() -> None:
     resolve_catalogue_dir()
-
-
-def _require_writable() -> None:
-    if catalogue_is_read_only():
-        raise RefusalError(
-            "resolved catalogue is the read-only bundled snapshot; set a writable "
-            "root via --catalogue-root or AGENTSMD_CATALOGUE_ROOT to make changes"
-        )
 
 
 def _parse_frontmatter(text: str) -> tuple[dict, str]:
@@ -244,7 +216,6 @@ def _add_bullets(
 ) -> tuple[Path, list[str]]:
     """Append bullets to a category file, applying the pre-trim pass."""
     _ensure_catalogue_root()
-    _require_writable()
     directory = proposed_dir() if proposed else curated_dir()
     if not proposed:
         raise CatalogueError("direct writes to curated/ are not allowed")
@@ -308,7 +279,6 @@ def addcategory(
 ) -> tuple[Path, list[str]]:
     """Create a proposed category file with a starter body."""
     _ensure_catalogue_root()
-    _require_writable()
     if (curated_dir() / f"{name}.md").exists():
         raise RefusalError(
             f"category already in curated; use curatecontent to refine the existing curated entry"
@@ -386,7 +356,6 @@ def _suggest_fix(body: str) -> list[str]:
 def curatecontent(category: str, force: bool = False) -> Path:
     """Merge a proposed category into the curated category."""
     _ensure_catalogue_root()
-    _require_writable()
     proposed_path = proposed_dir() / f"{category}.md"
     curated_path = curated_dir() / f"{category}.md"
 
@@ -442,7 +411,6 @@ def curatecontent(category: str, force: bool = False) -> Path:
 def curatecategory(name: str, force: bool = False) -> Path:
     """Promote a proposed category to curated."""
     _ensure_catalogue_root()
-    _require_writable()
     proposed_path = proposed_dir() / f"{name}.md"
     curated_path = curated_dir() / f"{name}.md"
 
