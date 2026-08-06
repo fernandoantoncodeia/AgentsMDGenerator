@@ -8,6 +8,10 @@ from typing import Iterable
 
 MAX_BULLET_LEN = 200
 DEDUPE_DISTANCE = 30
+# A bullet counts as a near-duplicate only when the edit distance is also small
+# relative to the shorter bullet. This keeps short, similarly-worded but
+# distinct bullets (e.g. one-line command references) from being folded.
+NEAR_DUP_RATIO = 0.4
 
 
 def levenshtein(a: str, b: str) -> int:
@@ -94,13 +98,27 @@ def split_long_bullet(bullet: str) -> list[str]:
     return [first, second]
 
 
+def is_near_duplicate(a: str, b: str) -> bool:
+    """Return True when two bullets are near-duplicates.
+
+    Near-duplicate means the Levenshtein distance is ≤30 chars AND ≤40% of the
+    shorter bullet's length. The length-relative factor prevents short,
+    similarly-worded but distinct bullets from being treated as duplicates.
+    """
+    shorter = min(len(a), len(b))
+    if shorter == 0:
+        return a == b
+    dist = levenshtein(a, b)
+    return dist <= DEDUPE_DISTANCE and dist <= NEAR_DUP_RATIO * shorter
+
+
 def dedupe(bullets: list[str], existing: Iterable[str]) -> tuple[list[str], int]:
-    """Drop bullets whose edit distance to any existing bullet is ≤30 chars."""
+    """Drop bullets that are near-duplicates of any existing bullet."""
     dropped = 0
     kept: list[str] = []
     existing_list = list(existing)
     for bullet in bullets:
-        if any(levenshtein(bullet, ex) <= DEDUPE_DISTANCE for ex in existing_list):
+        if any(is_near_duplicate(bullet, ex) for ex in existing_list):
             dropped += 1
             continue
         kept.append(bullet)

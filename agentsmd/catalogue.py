@@ -10,7 +10,15 @@ from typing import Iterable
 
 import yaml
 
-from .trim import MAX_BULLET_LEN, dedupe, levenshtein, pre_trim, scan_bullets
+from .trim import (
+    MAX_BULLET_LEN,
+    dedupe,
+    is_near_duplicate,
+    levenshtein,
+    pre_trim,
+    scan_bullets,
+    trim_tail,
+)
 
 MAX_CATEGORY_LINES = 100
 
@@ -147,6 +155,48 @@ def _render_bullets(bullets: list[str]) -> str:
             else:
                 lines.append(f"  {line}")
     return "\n".join(lines)
+
+
+_BULLET_RE = re.compile(r"^(\s*)[-*]\s+(.*)$")
+
+
+def _segment_body(body: str) -> list[tuple[str, str | None, list[str]]]:
+    """Split a body into ordered segments.
+
+    Each segment is ("bullet", canonical_text, raw_lines) for a real markdown
+    list item (with its indented continuation lines folded into the text), or
+    ("other", None, raw_lines) for any prose, heading, or blank line. This
+    preserves non-bullet content so a rewrite never mangles it.
+    """
+    lines = body.splitlines()
+    segments: list[tuple[str, str | None, list[str]]] = []
+    i = 0
+    while i < len(lines):
+        match = _BULLET_RE.match(lines[i])
+        if match:
+            raw = [lines[i]]
+            text = match.group(2).strip()
+            j = i + 1
+            while (
+                j < len(lines)
+                and lines[j].startswith((" ", "\t"))
+                and lines[j].strip()
+                and not _BULLET_RE.match(lines[j])
+            ):
+                raw.append(lines[j])
+                text += " " + lines[j].strip()
+                j += 1
+            segments.append(("bullet", text, raw))
+            i = j
+        else:
+            segments.append(("other", None, [lines[i]]))
+            i += 1
+    return segments
+
+
+def _extract_list_items(body: str) -> list[str]:
+    """Return only real markdown list items (prose and headings excluded)."""
+    return [text for kind, text, _ in _segment_body(body) if kind == "bullet" and text]
 
 
 def _default_title(category: str) -> str:
@@ -440,6 +490,70 @@ def curatecategory(name: str, force: bool = False) -> Path:
     return curated_path
 
 
+def recurate(
+    name: str, force: bool = False, trim_tails: bool = True
+) -> tuple[Path, list[str]]:
+    """Re-sweep an existing curated category in place.
+
+    Re-runs the trailer trim and drops near-duplicate list items (first
+    occurrence kept), preserving non-bullet content and the frontmatter. Never
+    reads or writes proposed/. Applies the same caps/refusal profile as
+    curatecontent.
+    """
+    _ensure_catalogue_root()
+    curated_path = curated_dir() / f"{name}.md"
+    if not curated_path.exists():
+        raise RefusalError(f"no curated entry for {name}")
+
+    data, body = _read_category(curated_path)
+    kept_texts: list[str] = []
+    out_lines: list[str] = []
+    logs: list[str] = []
+    dropped = 0
+
+    for kind, text, raw in _segment_body(body):
+        if kind != "bullet" or text is None:
+            out_lines.extend(raw)
+            continue
+        new_text = text
+        if trim_tails:
+            trimmed, trailer = trim_tail(text)
+            if trailer:
+                new_text = trimmed
+                logs.append(f'trimmed tail (dropped "{trailer}")')
+        if any(is_near_duplicate(new_text, kept) for kept in kept_texts):
+            dropped += 1
+            preview = new_text if len(new_text) <= 60 else new_text[:57] + "..."
+            logs.append(f'dropped near-duplicate bullet: "{preview}"')
+            continue
+        kept_texts.append(new_text)
+        if new_text != text:
+            out_lines.append(f"- {new_text}")
+        else:
+            out_lines.extend(raw)
+
+    if dropped:
+        logs.append(f"dropped {dropped} near-duplicate bullets")
+    new_body = "\n".join(out_lines).strip()
+
+    violations = _check_caps(data, new_body)
+    if violations and not force:
+        suggestions = _suggest_fix(new_body)
+        raise RefusalError(
+            "recurate: refused — " + "; ".join(violations) + "\n"
+            "Suggested fix: " + "; ".join(suggestions)
+        )
+    if not data.get("trigger"):
+        raise RefusalError(
+            "recurate: refused — missing trigger: field is non-overridable; --force cannot resolve it"
+        )
+
+    _write_category(curated_path, data, new_body)
+    if not logs:
+        logs.append("no changes")
+    return curated_path, logs
+
+
 def self_discipline_scan() -> list[tuple[str, list[str]]]:
     """Scan all curated categories and return findings per file."""
     _ensure_catalogue_root()
@@ -452,19 +566,18 @@ def self_discipline_scan() -> list[tuple[str, list[str]]]:
             findings.append(f"{len(lines)} lines (cap {MAX_CATEGORY_LINES})")
         if not data.get("trigger"):
             findings.append("missing trigger:")
-        bullets = _extract_bullets(body)
+        # Scan only real markdown list items; prose and headings are not bullets.
+        bullets = _extract_list_items(body)
         for i, bullet in enumerate(bullets, 1):
             if len(bullet) > MAX_BULLET_LEN:
                 findings.append(f"bullet {i} exceeds 200 chars ({len(bullet)} chars)")
-        # near-duplicate detection within the file
+        # near-duplicate detection within the file (length-relative rule)
         for i, a in enumerate(bullets):
             for j, b in enumerate(bullets):
-                if i < j:
-                    dist = levenshtein(a, b)
-                    if dist <= 30:
-                        findings.append(
-                            f"near-duplicate vs bullet {j + 1} (edit distance {dist})"
-                        )
+                if i < j and is_near_duplicate(a, b):
+                    findings.append(
+                        f"near-duplicate vs bullet {j + 1} (edit distance {levenshtein(a, b)})"
+                    )
         if not findings:
             findings.append("ok")
         results.append((path.stem, findings))

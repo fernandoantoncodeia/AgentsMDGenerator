@@ -110,6 +110,25 @@ def _trigger_tokens(trigger: str | None) -> set[str]:
 @main.command()
 @click.argument("name")
 @click.option("--force", is_flag=True, help="Override size/bullet-length caps")
+@click.option("--no-trim-tails", is_flag=True, help="Skip the trailer-trim phase")
+def recurate(name: str, force: bool, no_trim_tails: bool) -> None:
+    """Re-sweep a curated category: dedupe near-duplicate bullets and trim trailers."""
+    _resolve_or_exit()
+    try:
+        path, logs = catalogue.recurate(
+            name, force=force, trim_tails=not no_trim_tails
+        )
+        click.echo(f"recurate: rewrote {path}")
+        for log in logs:
+            click.echo(f"  - {log}")
+    except catalogue.CatalogueError as e:
+        click.echo(f"error: {e}", err=True)
+        sys.exit(1)
+
+
+@main.command()
+@click.argument("name")
+@click.option("--force", is_flag=True, help="Override size/bullet-length caps")
 @click.option(
     "--no-remap",
     is_flag=True,
