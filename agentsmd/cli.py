@@ -82,23 +82,60 @@ def curatecontent(category: str, force: bool) -> None:
         sys.exit(1)
 
 
+# Generic trigger words that do not, on their own, indicate two categories
+# describe the same kind of project. Overlap on these must not flag a remap.
+_TRIGGER_STOPWORDS = frozenset(
+    {
+        "project", "contains", "contain", "containing", "or", "and", "a", "an",
+        "the", "of", "in", "on", "to", "with", "for", "that", "is", "are", "any",
+        "files", "file", "present", "src", "main", "source", "sources", "tree",
+        "directory", "directories", "depending", "declaring", "extensions",
+        "docs", "named", "code", "repo", "repository",
+    }
+)
+
+
+def _trigger_tokens(trigger: str | None) -> set[str]:
+    """Return the distinctive lowercase tokens of a trigger expression.
+
+    Tokens start with an alphanumeric and may include . _ * - so that dotted
+    filenames (e.g. package.swift, pom.xml) stay whole and do not collide on a
+    shared bare stem. Generic words are dropped so unrelated triggers do not
+    appear to overlap.
+    """
+    tokens = re.findall(r"[a-z0-9][a-z0-9._*\-]*", (trigger or "").lower())
+    return {t for t in tokens if len(t) > 2 and t not in _TRIGGER_STOPWORDS}
+
+
 @main.command()
 @click.argument("name")
 @click.option("--force", is_flag=True, help="Override size/bullet-length caps")
-def curatecategory(name: str, force: bool) -> None:
+@click.option(
+    "--no-remap",
+    is_flag=True,
+    help="Promote as-is even if genuine remap candidates exist; leave other drafts untouched",
+)
+def curatecategory(name: str, force: bool, no_remap: bool) -> None:
     """Promote a proposed category to curated."""
     _resolve_or_exit()
     try:
-        # Check for remap candidates: other proposed entries with overlapping trigger text
-        proposed = catalogue.list_proposed()
+        # A remap candidate is another proposed entry whose trigger shares
+        # distinctive evidence with this one; generic words are ignored.
+        own_tokens = _trigger_tokens(catalogue.read_frontmatter(name, proposed=True).get("trigger"))
         candidates = [
             p
-            for p in proposed
-            if p != name and catalogue.read_body(p, proposed=True)
+            for p in catalogue.list_proposed()
+            if p != name
+            and own_tokens & _trigger_tokens(
+                catalogue.read_frontmatter(p, proposed=True).get("trigger")
+            )
         ]
-        if candidates:
+        if candidates and not no_remap:
             click.echo(f"remap candidates: {', '.join(candidates)}")
-            click.echo("confirm each remap explicitly before proceeding")
+            click.echo(
+                "not promoted: these drafts share trigger evidence. Re-run with "
+                "--no-remap to promote as-is, or curate/remove the listed drafts first."
+            )
             sys.exit(0)
         path = catalogue.curatecategory(name, force=force)
         click.echo(f"curatecategory: promoted {path}")
