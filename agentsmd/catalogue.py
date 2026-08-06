@@ -10,6 +10,7 @@ from typing import Iterable
 
 import yaml
 
+from . import config
 from .trim import (
     MAX_BULLET_LEN,
     dedupe,
@@ -19,8 +20,6 @@ from .trim import (
     scan_bullets,
     trim_tail,
 )
-
-MAX_CATEGORY_LINES = 100
 
 _ROOT_OVERRIDE: Path | None = None
 
@@ -88,6 +87,14 @@ def proposed_dir() -> Path:
 
 def _ensure_catalogue_root() -> None:
     resolve_catalogue_dir()
+
+
+def resolved_caps() -> config.Caps:
+    """Resolve the configured line caps against the current catalogue root."""
+    try:
+        return config.resolve_caps(resolve_catalogue_dir())
+    except config.ConfigError as e:
+        raise CatalogueError(str(e)) from e
 
 
 def _parse_frontmatter(text: str) -> tuple[dict, str]:
@@ -368,10 +375,9 @@ def _check_caps(data: dict, body: str) -> list[str]:
     """Return a list of cap violations for a curated file."""
     findings: list[str] = []
     lines = body.splitlines()
-    if len(lines) > MAX_CATEGORY_LINES:
-        findings.append(
-            f"merged would be {len(lines)} lines (cap {MAX_CATEGORY_LINES})"
-        )
+    cap = resolved_caps().category_max_lines
+    if len(lines) > cap:
+        findings.append(f"merged would be {len(lines)} lines (cap {cap})")
     bullets = _extract_bullets(body)
     for i, bullet in enumerate(bullets, 1):
         if len(bullet) > MAX_BULLET_LEN:
@@ -385,9 +391,10 @@ def _suggest_fix(body: str) -> list[str]:
     """Return suggested fixes for cap violations."""
     suggestions: list[str] = []
     lines = body.splitlines()
-    if len(lines) > MAX_CATEGORY_LINES:
-        overflow = len(lines) - MAX_CATEGORY_LINES
-        suggestions.append(f"drop {overflow} bullets to reach {MAX_CATEGORY_LINES} lines")
+    cap = resolved_caps().category_max_lines
+    if len(lines) > cap:
+        overflow = len(lines) - cap
+        suggestions.append(f"drop {overflow} bullets to reach {cap} lines")
     bullets = _extract_bullets(body)
     for i, bullet in enumerate(bullets, 1):
         if len(bullet) > MAX_BULLET_LEN:
@@ -557,13 +564,14 @@ def recurate(
 def self_discipline_scan() -> list[tuple[str, list[str]]]:
     """Scan all curated categories and return findings per file."""
     _ensure_catalogue_root()
+    cap = resolved_caps().category_max_lines
     results: list[tuple[str, list[str]]] = []
     for path in sorted(curated_dir().glob("*.md")):
         data, body = _read_category(path)
         findings: list[str] = []
         lines = body.splitlines()
-        if len(lines) > MAX_CATEGORY_LINES:
-            findings.append(f"{len(lines)} lines (cap {MAX_CATEGORY_LINES})")
+        if len(lines) > cap:
+            findings.append(f"{len(lines)} lines (cap {cap})")
         if not data.get("trigger"):
             findings.append("missing trigger:")
         # Scan only real markdown list items; prose and headings are not bullets.

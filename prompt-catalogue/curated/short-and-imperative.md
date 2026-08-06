@@ -8,4 +8,4 @@ AGENTS.md is for AI agents, not documentation for a person. After any edit, re-r
 - Prefer imperatives: "do X" not "consider doing X."
 - Avoid prose paragraphs when a bulleted rule suffices.
 - Each rule is one or two sentences.
-- Soft cap 150 lines; hard cap 32 KiB.
+- Soft cap 512 lines; hard cap 32 KiB.

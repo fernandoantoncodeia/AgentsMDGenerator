@@ -108,6 +108,20 @@ def _trigger_tokens(trigger: str | None) -> set[str]:
 
 
 @main.command()
+def caps() -> None:
+    """Print the resolved line caps and the source that won each resolution."""
+    _resolve_or_exit()
+    try:
+        c = catalogue.resolved_caps()
+    except catalogue.CatalogueError as e:
+        click.echo(f"error: {e}", err=True)
+        sys.exit(1)
+    click.echo(f"category_max_lines:  {c.category_max_lines} ({c.sources['category_max_lines']})")
+    click.echo(f"agents_md_max_lines: {c.agents_md_max_lines} ({c.sources['agents_md_max_lines']})")
+    click.echo(f"agents_md_max_bytes: {c.agents_md_max_bytes} ({c.sources['agents_md_max_bytes']})")
+
+
+@main.command()
 @click.argument("name")
 @click.option("--force", is_flag=True, help="Override size/bullet-length caps")
 @click.option("--no-trim-tails", is_flag=True, help="Skip the trailer-trim phase")

@@ -15,6 +15,7 @@ from mcp.server.mcpserver.context import Context
 from . import catalogue
 from .mcp_types import (
     RESOURCE_CATEGORIES,
+    RESOURCE_CONFIG,
     RESOURCE_CURATED,
     RESOURCE_PROPOSED,
     RESOURCE_PROPOSED_LIST,
@@ -81,6 +82,21 @@ async def categories_resource() -> dict[str, Any]:
                 }
                 for c in cats
             ]
+        }
+    except catalogue.CatalogueError as e:
+        return {"error": str(e)}
+
+
+@server.resource(RESOURCE_CONFIG)
+async def config_resource() -> dict[str, Any]:
+    """Return the resolved line caps and the source that won each resolution."""
+    try:
+        caps = catalogue.resolved_caps()
+        return {
+            "category_max_lines": caps.category_max_lines,
+            "agents_md_max_lines": caps.agents_md_max_lines,
+            "agents_md_max_bytes": caps.agents_md_max_bytes,
+            "sources": caps.sources,
         }
     except catalogue.CatalogueError as e:
         return {"error": str(e)}

@@ -94,14 +94,14 @@ If a discovered rule applies only to this consumer project (e.g. a build error u
 
 ## 10. Trim pass
 
-The output AGENTS.md must respect the 150-line soft cap and the 32 KiB hard cap.
+The output AGENTS.md must respect the AGENTS.md line and byte caps read from `catalogue://config` (defaults: 512 lines, 32 KiB). Read them at the start of the trim pass.
 
 - After every edit, re-read the file in full.
 - Cut verbose prose; prefer imperatives and bullets.
 - Drop near-duplicate rules across spliced sections.
-- Re-run the trim pass until the file is under the 150-line cap OR every remaining line is non-redundant and required.
+- Re-run the trim pass until the file is under the configured AGENTS.md line cap (default 512) OR every remaining line is non-redundant and required.
 
-The 100-line per-category cap is enforced at the catalogue layer, not here.
+The per-category cap (from `catalogue://config`, default 32 lines) is enforced at the catalogue layer, not here.
 
 ## 11. CLAUDE.md mirror
 
@@ -119,7 +119,7 @@ If the path argument points outside the consumer repo root, report `mirror skipp
 
 After the splice pass, read the bodies of all curated categories via `catalogue://curated/<category>` and run the four-rule self-discipline check:
 
-1. File ≤100 lines (per-category cap).
+1. File ≤ the configured per-category cap (from `catalogue://config`, default 32 lines).
 2. Every bullet ≤200 chars.
 3. Within-category near-duplicates (≤30 char edit distance).
 4. `trigger:` field present in metadata.
@@ -127,7 +127,7 @@ After the splice pass, read the bodies of all curated categories via `catalogue:
 The scan is read-only. It MUST NOT refuse the `/update-agents` invocation. Per-file form in the completion summary:
 
 - `ok` — passes all four.
-- `<n> lines (cap 100)` — over the per-category cap.
+- `<n> lines (cap <configured>)` — over the per-category cap.
 - `bullet <i> exceeds 200 chars (<n> chars)` — over-length bullet.
 - `near-duplicate vs bullet <j> (edit distance <n>)` — within-category dedupe candidate.
 - `missing trigger:` — HARD finding, named as a contract violation.

@@ -69,3 +69,20 @@ The server and CLI resolve the catalogue directory in this order:
 3. `prompt-catalogue/` in the current working directory
 
 `bin/agentsmd-serve` relies on step 3 by entering the checkout before launch. If none resolve, the server and CLI exit with an error naming this order.
+
+## Line caps (configurable)
+
+Two caps have configurable defaults:
+
+- Per-category curated file: **32 lines** (`category_max_lines`)
+- Generated AGENTS.md: **512 lines** (`agents_md_max_lines`) plus a **32 KiB** byte cap (`agents_md_max_bytes`)
+
+Each value resolves per-key with precedence **environment variable > `caps.json` in the catalogue root > built-in default**:
+
+| Cap | Env var | `caps.json` key | Default |
+| --- | --- | --- | --- |
+| Per-category lines | `AGENTSMD_CATEGORY_MAX_LINES` | `category_max_lines` | 32 |
+| AGENTS.md lines | `AGENTSMD_AGENTS_MD_MAX_LINES` | `agents_md_max_lines` | 512 |
+| AGENTS.md bytes | `AGENTSMD_AGENTS_MD_MAX_BYTES` | `agents_md_max_bytes` | 32768 |
+
+Copy `prompt-catalogue/caps.json.example` to `prompt-catalogue/caps.json` and edit to override. A malformed `caps.json` or a non-positive value is rejected with an error. Inspect the resolved values with `agentsmd caps`; clients can read them from the `catalogue://config` MCP resource.

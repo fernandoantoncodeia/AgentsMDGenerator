@@ -141,7 +141,7 @@ When the workflow writes or updates AGENTS.md, it SHALL report a short summary o
 - **THEN** the summary reports the configured endpoint and the exact connection error, and explicitly states whether the existing AGENTS.md was preserved or no file existed
 
 ### Requirement: Sourced principles list is concrete and citable
-The workflow SHALL embed a Sourced Principles list covering, at minimum: command-first instructions; closure-defined completion; show-don't-tell examples; task-organized sections; escalation rules plus a Never list; explicit boundaries; three-tier NEVER/ASK/ALWAYS judgment; Toolchain First; length discipline (start 20-50 lines, ~150-line soft cap, 32 KiB Code hard cap); hand-written beats LLM-generated; file-scoped commands preferred; concrete pointers not lists; good and bad example pairing; project anchor stack with versions; cross-tool portability (Claude Code wrapper or symlink); living documentation updated in same PR as convention changes. Each principle SHALL cite one or more of the six canonical sources by URL inline.
+The workflow SHALL embed a Sourced Principles list covering, at minimum: command-first instructions; closure-defined completion; show-don't-tell examples; task-organized sections; escalation rules plus a Never list; explicit boundaries; three-tier NEVER/ASK/ALWAYS judgment; Toolchain First; length discipline (start 20-50 lines, ~512-line cap, 32 KiB Code hard cap); hand-written beats LLM-generated; file-scoped commands preferred; concrete pointers not lists; good and bad example pairing; project anchor stack with versions; cross-tool portability (Claude Code wrapper or symlink); living documentation updated in same PR as convention changes. The length-discipline numbers are defaults; the workflow SHALL read the effective AGENTS.md line and byte caps from `catalogue://config`. Each principle SHALL cite one or more of the six canonical sources by URL inline.
 
 #### Scenario: Each principle has a source citation
 - **WHEN** a maintainer or user inspects the workflow's Sourced Principles list
@@ -152,7 +152,7 @@ The workflow SHALL embed a Sourced Principles list covering, at minimum: command
 - **THEN** the citation lists all of them in order of authority (open standard first, then practitioner guides)
 
 #### Scenario: Length discipline backed by named evidence
-- **WHEN** the workflow's length-discipline rule (start 20-50 lines, soft cap ~150, hard cap 32 KiB Code) is questioned
+- **WHEN** the workflow's length-discipline rule (start 20-50 lines, cap ~512, hard cap 32 KiB Code) is questioned
 - **THEN** the citation surfaces the GitHub Engineering analysis of 2,500+ repositories, the Gloaguen et al. 2026 ETH Zurich empirical study, and the Princeton agent-runtime study as named evidence
 
 ### Requirement: Writing-priority order is sourced from research, not invented
@@ -228,17 +228,17 @@ Each category file in the central catalogue MUST carry YAML frontmatter with at 
 - **THEN** the evaluation happens in the project skill using only the metadata from `catalogue://categories`; the MCP server does not receive project files or paths for trigger evaluation
 
 ### Requirement: Catalog self-discipline scan runs at every /update-agents invocation
-After the splice pass, every `/update-agents` invocation SHALL read `catalogue://categories` and, for each curated category, request the body via `catalogue://curated/<category>` to emit a `Catalog self-discipline check:` section in the completion summary. The scan is read-only; it MUST NOT refuse the `/update-agents` invocation. Per curated file, the workflow outputs one of:
+After the splice pass, every `/update-agents` invocation SHALL read `catalogue://categories` and, for each curated category, request the body via `catalogue://curated/<category>` to emit a `Catalog self-discipline check:` section in the completion summary. The scan is read-only; it MUST NOT refuse the `/update-agents` invocation. The per-category line cap is the configured value (default 32; read from `catalogue://config`). Per curated file, the workflow outputs one of:
 
 - `ok` — the file passes all four hygiene rules.
-- `<n> lines (cap 100)` — the file exceeds the per-category cap from D11.
+- `<n> lines (cap <configured>)` — the file exceeds the per-category cap.
 - `bullet <i> exceeds 200 chars (<n> chars)` — over-length bullet.
 - `near-duplicate vs bullet <j> (edit distance <n>)` — within-category dedupe candidate.
 - `missing trigger:` — HARD contract violation, named in the summary.
 
 #### Scenario: Self-discipline scan surfaces oversize curated file
-- **WHEN** a curated file exceeds 100 lines
-- **THEN** the completion summary has a `Catalog self-discipline check:` section listing the file with its `>100 lines` finding. The workflow still emits the consumer AGENTS.md as normal; the scan is informative.
+- **WHEN** a curated file exceeds the configured per-category cap
+- **THEN** the completion summary has a `Catalog self-discipline check:` section listing the file with its over-cap finding. The workflow still emits the consumer AGENTS.md as normal; the scan is informative.
 
 #### Scenario: Self-discipline scan surfaces missing trigger
 - **WHEN** a curated file lacks `trigger:` frontmatter

@@ -6,6 +6,7 @@ RESOURCE_CATEGORIES = "catalogue://categories"
 RESOURCE_CURATED = "catalogue://curated/{category}"
 RESOURCE_PROPOSED = "catalogue://proposed/{category}"
 RESOURCE_PROPOSED_LIST = "catalogue://proposed-list"
+RESOURCE_CONFIG = "catalogue://config"
 
 TOOL_ADDCONTENT = "catalogue_addcontent"
 TOOL_ADDCATEGORY = "catalogue_addcategory"
