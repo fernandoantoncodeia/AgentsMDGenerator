@@ -24,6 +24,10 @@ from .mcp_types import (
     TOOL_CURATECATEGORY,
     TOOL_CURATECONTENT,
     TOOL_FETCH_SOURCES,
+    TOOL_GET_CONFIG,
+    TOOL_GET_CURATED,
+    TOOL_LIST_CATEGORIES,
+    TOOL_LIST_PROPOSED,
 )
 
 OPERATOR_CLIENT_NAME = "agentsmd-operator-cli"
@@ -133,6 +137,30 @@ async def proposed_resource(category: str) -> dict[str, Any]:
         return {"body": body}
     except catalogue.CatalogueError as e:
         return {"error": str(e)}
+
+
+@server.tool(name=TOOL_LIST_CATEGORIES)
+async def list_categories_tool() -> dict[str, Any]:
+    """Return curated category metadata for clients without resource reads."""
+    return await categories_resource()
+
+
+@server.tool(name=TOOL_GET_CURATED)
+async def get_curated_tool(category: str) -> dict[str, Any]:
+    """Return a curated category body for clients without resource reads."""
+    return await curated_resource(category)
+
+
+@server.tool(name=TOOL_LIST_PROPOSED)
+async def list_proposed_tool() -> dict[str, Any]:
+    """Return proposed category names for clients without resource reads."""
+    return await proposed_list_resource()
+
+
+@server.tool(name=TOOL_GET_CONFIG)
+async def get_config_tool() -> dict[str, Any]:
+    """Return catalogue caps for clients without resource reads."""
+    return await config_resource()
 
 
 @server.tool(name=TOOL_ADDCONTENT)

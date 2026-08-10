@@ -30,7 +30,13 @@ The workflow SHALL always include the "be a colleague" baseline section in every
 - **THEN** the workflow SHALL NOT silently rewrite correct content into something false or weaker
 
 ### Requirement: Conditional catalog sections are applied only by trigger
-The workflow SHALL read category metadata and bodies exclusively through the configured MCP server, using the `catalogue://categories` resource for metadata and `catalogue://curated/<category>` resources for bodies. Each category's `trigger:` field SHALL be evaluated against a deterministic scan of the target repo; the workflow SHALL splice the category into the output only when its trigger fires. The workflow MUST NOT enumerate or read files from a local `prompt-catalogue/` directory. Conditions that match a trigger-equivalent but have no entry in the central catalogue SHALL trigger an auto-add to the master catalogue via `catalogue_addcategory` with the operator later curating via `agentsmd curatecategory` in the master repo.
+
+The workflow SHALL read category metadata, curated bodies, proposed names, and caps through the configured MCP server. It SHALL prefer the corresponding `catalogue://` resource. If the MCP client does not provide resource-read capability, it MAY use the equivalent read-only compatibility tool (`catalogue_list_categories`, `catalogue_get_curated`, `catalogue_list_proposed`, or `catalogue_get_config`). It MUST NOT read a local `prompt-catalogue/` directory or use curation tools as a read fallback. Each category's `trigger:` field SHALL be evaluated against a deterministic scan of the target repo; the workflow SHALL splice the category into the output only when its trigger fires. Conditions that match a trigger-equivalent but have no entry in the central catalogue SHALL trigger an auto-add to the master catalogue via `catalogue_addcategory` with the operator later curating via `agentsmd curatecategory` in the master repo.
+
+#### Scenario: Tool-only client generates a new AGENTS.md
+
+- **WHEN** the configured MCP server is reachable and the client exposes only tools
+- **THEN** the workflow uses compatibility read tools to evaluate triggers and splice curated bodies, then generates the baseline output subject to the existing failure modes
 
 #### Scenario: Python trigger fires
 - **WHEN** the target repo contains Python sources (e.g. `pyproject.toml`, `requirements*.txt`, `setup.py`, `*.py`)
@@ -72,6 +78,16 @@ The workflow SHALL read category metadata and bodies exclusively through the con
 #### Scenario: Auto-add to proposed is the only way to seed new categories
 - **WHEN** the workflow detects a trigger that has no curated coverage
 - **THEN** it MUST propose the entry through the MCP server; it MUST NOT write directly to any local or remote `curated/` directory and it MUST NOT splice the proposed entry into AGENTS.md in the same invocation
+
+#### Scenario: Resource-capable client remains supported
+
+- **WHEN** the client can read MCP resources
+- **THEN** the workflow uses the resource URIs and does not require compatibility tools
+
+#### Scenario: Read fallback is unavailable
+
+- **WHEN** neither resource reads nor the matching compatibility tool can be used
+- **THEN** the workflow reports the MCP read-path error and preserves the existing create/refresh write safety behavior
 
 ### Requirement: Update mode reads, evaluates, optimizes, returns updated file
 The workflow SHALL operate in update mode whenever an AGENTS.md already exists. It SHALL read the existing file, evaluate it against the embedded principles, ensure the mandated section is present, splice curated categories whose triggers fire, cut verbose or non-imperative content, write the improved file in place, then re-read and trim. After editing, the workflow SHALL report any "applicable but not curated" categories in the completion summary without auto-adding them. If the MCP server is unreachable in update mode, the workflow SHALL preserve the existing AGENTS.md and report the failure.

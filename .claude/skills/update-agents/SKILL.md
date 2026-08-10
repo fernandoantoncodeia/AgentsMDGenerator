@@ -37,8 +37,10 @@ Determine whether to create or refresh:
 ## 3. Connect to MCP server and read metadata
 
 1. Connect to the MCP server using the resolved configuration.
-2. Read `catalogue://categories`. The response is a list of `{name, title, trigger, heuristic}` objects.
+2. Read `catalogue://categories`. The response is a list of `{name, title, trigger, heuristic}` objects. If the client does not expose MCP resource reads, call the equivalent read-only tool `catalogue_list_categories`.
 3. If the connection fails, fail gracefully: in create mode write nothing; in refresh mode preserve the existing `AGENTS.md` and report the error.
+
+Resource compatibility: use `catalogue://categories`, `catalogue://curated/<category>`, `catalogue://proposed-list`, and `catalogue://config` when resource reads are available. Otherwise use the matching read-only tools `catalogue_list_categories`, `catalogue_get_curated(category)`, `catalogue_list_proposed`, and `catalogue_get_config`. These tools are read-only fallbacks; never substitute local `prompt-catalogue/` reads or curation tools.
 
 ## 4. Trigger evaluation (deterministic, local)
 
@@ -54,7 +56,7 @@ A trigger whose evaluation is inconclusive is treated as NOT firing. Surface it 
 
 ## 5. Read curated bodies for firing categories
 
-For each category whose trigger fires, request `catalogue://curated/<category>` and read the body. The body is spliced verbatim under `## <frontmatter.title>`. Do NOT read `catalogue://proposed/<category>` for splicing.
+For each category whose trigger fires, request `catalogue://curated/<category>` and read the body, or call `catalogue_get_curated(category)` when resource reads are unavailable. The body is spliced verbatim under `## <frontmatter.title>`. Do NOT read `catalogue://proposed/<category>` for splicing.
 
 ## 6. Required baseline sections
 
@@ -94,7 +96,7 @@ If a discovered rule applies only to this consumer project (e.g. a build error u
 
 ## 10. Trim pass
 
-The output AGENTS.md must respect the AGENTS.md line and byte caps read from `catalogue://config` (defaults: 512 lines, 32 KiB). Read them at the start of the trim pass.
+The output AGENTS.md must respect the AGENTS.md line and byte caps read from `catalogue://config`, or `catalogue_get_config` when resource reads are unavailable (defaults: 512 lines, 32 KiB). Read them at the start of the trim pass.
 
 - After every edit, re-read the file in full.
 - Cut verbose prose; prefer imperatives and bullets.
@@ -117,7 +119,7 @@ If the path argument points outside the consumer repo root, report `mirror skipp
 
 ## 12. Catalog self-discipline check
 
-After the splice pass, read the bodies of all curated categories via `catalogue://curated/<category>` and run the four-rule self-discipline check:
+After the splice pass, read the bodies of all curated categories via `catalogue://curated/<category>` (or `catalogue_get_curated(category)` when needed) and run the four-rule self-discipline check:
 
 1. File ≤ the configured per-category cap (from `catalogue://config`, default 32 lines).
 2. Every bullet ≤200 chars.
