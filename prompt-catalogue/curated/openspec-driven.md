@@ -12,3 +12,5 @@ trigger: openspec/ directory exists at the repo root
 - Never modify installed or upstream OpenSpec skills, commands, schemas, or repositories. Keep framework-owned files updateable.
 - Use supported OpenSpec and team trigger points for ownership, and project-owned Factory hooks, skills, commands, or scripts for delivery gates.
 - Treat the `test` team point as a team review binding, not as a new artifact in the spec-driven schema.
+- Any regression-suite failure found during a change's own regression check MUST be fixed within that change before archiving — never recorded as "pre-existing"/"out-of-scope" and left open.
+- An unrelated failure still blocks archiving unless the user explicitly waives it with a recorded reason in the change's own artifacts — never self-waive.
