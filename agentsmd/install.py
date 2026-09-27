@@ -8,6 +8,7 @@ launch and use the generator.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -15,6 +16,9 @@ from pathlib import Path
 import click
 
 SERVER_NAME = "agentsmd"
+ENV_VAR_NAME = "AGENTSMD_MCP_URL"
+_MARKER_BEGIN = "# agentsmd-install: begin"
+_MARKER_END = "# agentsmd-install: end"
 
 
 def _asset_root() -> Path | None:
@@ -43,6 +47,35 @@ def _merge_mcp(config_path: Path, command: str) -> None:
     servers = data.setdefault("mcpServers", {})
     servers[SERVER_NAME] = _server_entry(command)
     config_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+
+def _resolve_shell_rc(home_dir: Path, shell_env: str | None) -> Path:
+    """Pick the shell profile to write AGENTSMD_MCP_URL into."""
+    shell_name = Path(shell_env).name if shell_env else ""
+    if shell_name == "bash":
+        return home_dir / ".bashrc"
+    return home_dir / ".zshrc"
+
+
+def _write_env_var(rc_path: Path, server_command: str) -> None:
+    """Idempotently insert/update the AGENTSMD_MCP_URL export in rc_path."""
+    block = f'{_MARKER_BEGIN}\nexport {ENV_VAR_NAME}="{server_command}"\n{_MARKER_END}\n'
+
+    existing = rc_path.read_text(encoding="utf-8") if rc_path.exists() else ""
+    start = existing.find(_MARKER_BEGIN)
+    end = existing.find(_MARKER_END)
+    if start != -1 and end != -1:
+        end += len(_MARKER_END)
+        # Consume a single trailing newline after the marker so re-writes don't grow blank lines.
+        if end < len(existing) and existing[end] == "\n":
+            end += 1
+        updated = existing[:start] + block + existing[end:]
+    else:
+        separator = "" if not existing or existing.endswith("\n") else "\n"
+        updated = existing + separator + block
+
+    rc_path.parent.mkdir(parents=True, exist_ok=True)
+    rc_path.write_text(updated, encoding="utf-8")
 
 
 def _copy_workflow(asset_root: Path, tool_home: Path, written: list[str]) -> None:
@@ -75,7 +108,13 @@ def _copy_workflow(asset_root: Path, tool_home: Path, written: list[str]) -> Non
     default=None,
     help="Override the home directory (mainly for testing)",
 )
-def main(tool: str, server_command: str, home: str | None) -> None:
+@click.option(
+    "--no-shell-env",
+    is_flag=True,
+    default=False,
+    help="Skip writing AGENTSMD_MCP_URL to the user's shell profile",
+)
+def main(tool: str, server_command: str, home: str | None, no_shell_env: bool) -> None:
     """Install the agentsmd MCP server and update-agents workflow at the user level."""
     home_dir = Path(home).expanduser() if home else Path.home()
     asset_root = _asset_root()
@@ -103,6 +142,13 @@ def main(tool: str, server_command: str, home: str | None) -> None:
     click.echo(f"agentsmd-install: configured {tool} (server command: {server_command})")
     for path in written:
         click.echo(f"  wrote {path}")
+
+    if not no_shell_env:
+        rc_path = _resolve_shell_rc(home_dir, os.environ.get("SHELL"))
+        _write_env_var(rc_path, server_command)
+        click.echo(f"  wrote {rc_path} (export {ENV_VAR_NAME})")
+        click.echo(f"Open a new shell (or `source {rc_path}`) to pick up {ENV_VAR_NAME}.")
+
     click.echo("Open any project and run /update-agents to generate or refresh AGENTS.md.")
 
 

@@ -13,10 +13,13 @@ pip install -e .          # provides agentsmd, agentsmd-server, agentsmd-install
 agentsmd-install --server-command "$(pwd)/bin/agentsmd-serve"
 ```
 
-`agentsmd-install` writes a user-level MCP registration and installs the `update-agents` skill + command for both Factory (`~/.factory/`) and Claude (`~/.claude/`). It is idempotent and merges into existing config (it never clobbers unrelated servers, skills, or commands). Options:
+`agentsmd-install` writes a user-level MCP registration and installs the `update-agents` skill + command for both Factory (`~/.factory/`) and Claude (`~/.claude/`). It also exports `AGENTSMD_MCP_URL` in your shell profile (`~/.zshrc` for zsh, `~/.bashrc` for bash), so `/update-agents` resolves the server in any consumer project without a per-project `.agentsmd/mcp.json` — the skill's discovery order checks this env var before falling back to that file. It is idempotent and merges into existing config (it never clobbers unrelated servers, skills, commands, or shell-profile content outside its own marker block). Options:
 
 - `--tool factory | claude | both` (default `both`)
 - `--server-command <cmd>` (default `agentsmd-server` on PATH)
+- `--no-shell-env` (skip writing `AGENTSMD_MCP_URL` to your shell profile)
+
+Open a new shell (or `source` the profile) after installing for the exported variable to take effect.
 
 Point `--server-command` at the checkout's `bin/agentsmd-serve` (absolute path). That launcher enters the repo before starting, so the server serves `./prompt-catalogue` from your checkout regardless of which project you are working in.
 
