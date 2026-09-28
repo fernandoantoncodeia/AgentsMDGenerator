@@ -8,3 +8,6 @@ trigger: project contains an *.xcodeproj or *.xcworkspace directory, a Package.s
 - Store credentials and tokens in the Keychain, never in `UserDefaults` or a plist.
 - Prefer `async`/`await` with `URLSession` over completion handlers in new code.
 - Regenerate API model types from the contract instead of hand-writing `Codable` structs that mirror an existing spec.
+- Before `xcodebuild test` on a Simulator, boot it and wait: `xcrun simctl shutdown all`, `simctl boot <udid>`, `simctl bootstatus <udid> -b`, then sleep a few seconds.
+- "Simulator device failed to launch … Busy (Application failed preflight checks)" means a cold or half-booted simulator, not a code failure; boot-and-wait, then retry once before investigating.
+- A run.
