@@ -16,3 +16,7 @@ trigger: project contains .persona-factory/manifest.json, .claude/teams/*/TEAM.m
 - Use the memory tools: `recall` before deciding, `remember` tradeoffs after proposal, specs and design. `.persona-factory/memory` digests are committed; the derived index is not.
 - Do not start a real `software-project` run (it spends agent tokens) unless the user asks; use `factory-setup-v2 smoke` to check an install.
 - A rule about using the factory itself belongs in this category: add it with `catalogue_addcontent(category="skills-factory-project", body=...)`.
+- Keep a mermaid diagram in each architecture reference: the functional one shows the logical pieces and who calls or depends on whom, the technical one the physical pieces and their links.
+- Update both on every change.
+- Start every change with `factory-setup-v2 refresh` (scripted): it re-vendors skills and workflow definitions and checks AGENTS.md.
+- If agents is changed, run /update-agents; if new-categories, tell the user.
