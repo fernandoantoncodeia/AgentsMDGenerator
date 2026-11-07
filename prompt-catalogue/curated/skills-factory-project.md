@@ -20,3 +20,6 @@ trigger: project contains .persona-factory/manifest.json, .claude/teams/*/TEAM.m
 - Update both on every change.
 - Start every change with `factory-setup-v2 refresh` (scripted): it re-vendors skills and workflow definitions and checks AGENTS.md.
 - If agents is changed, run /update-agents; if new-categories, tell the user.
+- Review loops: only critical findings block and iterate; every other finding (high, med, low) is deferred in the round it is reported, with no fix loop, and goes to the review backlog.
+- Only critical findings go through the judge. Never self-waive: a waiver is a recorded human decision with a reason. (Replaces the rule "only critical and high findings iterate".)
+- Name each required backlog item as `[backlog:<id>]` on a checkbox task, or drop it with `dropped: <reason>` (20+ characters). Keep optional-only tasks within one third of all tasks.
