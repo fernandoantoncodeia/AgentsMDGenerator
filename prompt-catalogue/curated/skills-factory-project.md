@@ -23,3 +23,5 @@ trigger: project contains .persona-factory/manifest.json, .claude/teams/*/TEAM.m
 - Review loops: only critical findings block and iterate; every other finding (high, med, low) is deferred in the round it is reported, with no fix loop, and goes to the review backlog.
 - Only critical findings go through the judge. Never self-waive: a waiver is a recorded human decision with a reason. (Replaces the rule "only critical and high findings iterate".)
 - Name each required backlog item as `[backlog:<id>]` on a checkbox task, or drop it with `dropped: <reason>` (20+ characters). Keep optional-only tasks within one third of all tasks.
+- Review loops: only critical findings (and high hazard-review findings) block; every other finding goes to the backlog and is only prioritised. There is no deferral or drop.
+- At the start of every change run `factory-workflow-v2 backlog` and name each required `[backlog:<id>]` item in a checkbox task; tick it when done. Never write `backlog-findings-*.json`.
